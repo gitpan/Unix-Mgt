@@ -3,19 +3,19 @@ my ($make_args);
 
 # WriteMakefile params
 $make_args = {
-               'AUTHOR' => 'Miko O\'Sullivan <miko@idocs.com>',
-               'PL_FILES' => {},
-               'LICENSE' => 'perl',
-               'VERSION_FROM' => 'lib/Unix/Mgt.pm',
-               'EXE_FILES' => [],
                'NAME' => 'Unix::Mgt',
+               'AUTHOR' => 'Miko O\'Sullivan <miko@idocs.com>',
+               'ABSTRACT' => 'Unix::Mgt - lightweight Unix management tools',
+               'PL_FILES' => {},
+               'EXE_FILES' => [],
+               'VERSION_FROM' => 'lib/Unix/Mgt.pm',
+               'LICENSE' => 'perl',
                'PREREQ_PM' => {
                                 'IPC::System::Simple' => '1.25',
+                                'Capture::Tiny' => '0.25',
                                 'String::Util' => 0,
-                                'Unix::SearchPathGuess' => '0.11',
-                                'Capture::Tiny' => '0.25'
-                              },
-               'ABSTRACT' => 'Unix::Mgt - lightweight Unix management tools'
+                                'Unix::SearchPathGuess' => '0.11'
+                              }
              };
 
 

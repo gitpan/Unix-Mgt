@@ -223,7 +223,7 @@ Unix::Mgt::Group
 
      $group = Unix::Mgt::Group->create('websters');
 
-    create() uses the Unix addgroup program.
+    create() uses the Unix groupadd program.
 
  ensure
 
@@ -312,7 +312,7 @@ TO DO
 
 VERSION
 
-    Version: 0.10
+    Version: 0.11
 
 HISTORY
 
@@ -322,12 +322,22 @@ HISTORY
 
       Initial release
 
+      Version 0.11 December 31, 2014
+
+	Changed addgroup to groupadd.
+
+	Added tests for existence of adduser, usermod, and groupadd.
+
 POD ERRORS
 
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 1527:
+    Around line 1535:
+
+      =over without closing =back
+
+    Around line 1554:
 
       =cut found outside a pod block.  Skipping to next block.
 

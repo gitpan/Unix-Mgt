@@ -2,6 +2,7 @@
 use strict;
 use Unix::Mgt;
 use Test::More;
+use Unix::SearchPathGuess ':all';
 
 # go to test directory
 BEGIN {
@@ -36,12 +37,46 @@ else
 if ($bad_os)
 	{ plan skip_all => 'This module irrelevant on Windows' }
 else
-	{ plan tests => 18 }
+	{ plan tests => 21 }
 
 #
 # check if this test is being run in an acceptable operating system
 #------------------------------------------------------------------------------
 
+
+#------------------------------------------------------------------------------
+# test for existence of some necessary external commands
+#
+do {
+	my ($local_path, @dirs);
+	
+	# get directories array
+	$local_path = search_path_guess();
+	@dirs = split(':', $local_path);
+	@dirs = grep {m|\S|s} @dirs;
+	@dirs = do { my %seen; grep { !$seen{$_}++ } @dirs };
+	
+	CMD_LOOP:
+	foreach my $cmd (qw{adduser usermod groupadd}) {
+		# println $cmd; ##i
+		
+		foreach my $dir (@dirs) {
+			my ($path, $mode);
+			$path = "$dir/$cmd";
+			
+			if (-e $path) {
+				ok(1);
+				next CMD_LOOP;
+			}
+		}
+		
+		# if we get this far then we didn't find the command
+		ok(0);
+	}
+};
+#
+# test for existence of some necessary external commands
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -94,3 +129,5 @@ if (1) { ##i
 #
 # Unix::Mgt::Group->get()
 #------------------------------------------------------------------------------
+
+

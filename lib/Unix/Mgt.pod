@@ -220,7 +220,7 @@ is the name for the new group.
 
  $group = Unix::Mgt::Group->create('websters');
 
-create() uses the Unix C<addgroup> program.
+create() uses the Unix C<groupadd> program.
 
 =head2 ensure
 
@@ -306,7 +306,7 @@ Please feel free to contribute code for these purposes.
 
 =head1 VERSION
 
-Version: 0.10
+Version: 0.11
 
 =head1 HISTORY
 
@@ -317,6 +317,16 @@ Version: 0.10
 =item Version 0.10    December 30, 2014
 
 Initial release
+
+=over 4
+
+=item Version 0.11    December 31, 2014
+
+Changed addgroup to groupadd.
+
+Added tests for existence of adduser, usermod, and groupadd.
+
+=back
 
 =back
 

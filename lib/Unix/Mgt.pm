@@ -5,7 +5,7 @@ package Unix::Mgt;
 use strict;
 use IPC::System::Simple 'runx';
 use Capture::Tiny 'capture_merged';
-use String::Util 'nocontent';
+use String::Util qw{define nocontent};
 use Unix::SearchPathGuess 'cmd_path_guess';
 use Carp 'croak';
 
@@ -14,7 +14,19 @@ use Carp 'croak';
 # use Debug::ShowStuff::ShowVar;
 
 # version
-our $VERSION = '0.10';
+our $VERSION = '0.11';
+
+
+#------------------------------------------------------------------------------
+# export
+#
+use base 'Exporter';
+use vars qw[@EXPORT_OK %EXPORT_TAGS];
+push @EXPORT_OK, 'unix_mgt_err';
+%EXPORT_TAGS = ('all' => [@EXPORT_OK]);
+#
+# export
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -104,6 +116,13 @@ sub set_err {
 sub reset_err {
 	undef $err_id;
 	undef $err_msg;
+}
+
+sub unix_mgt_err {
+	if ($err_id)
+		{ return $err_id . ': ' . $err_msg . "\n" }
+	else
+		{ return '' }
 }
 #
 # reset_err
@@ -580,8 +599,8 @@ sub create {
 	$class->mod_only($name);
 	
 	# build command
-	push @cmd, '--disabled-password';
-	push @cmd, '--gecos', '';
+	# push @cmd, '--disabled-password';
+	# push @cmd, '--gecos', '';
 	
 	# if creating as system user
 	if ($opts{'system'})
@@ -1125,7 +1144,7 @@ is the name for the new group.
 
  $group = Unix::Mgt::Group->create('websters');
 
-create() uses the Unix C<addgroup> program.
+create() uses the Unix C<groupadd> program.
 
 =cut
 
@@ -1156,8 +1175,8 @@ sub create {
 	$class->mod_only($name);
 	
 	# build command
-	push @cmd, '--disabled-password';
-	push @cmd, '--gecos', '';
+	# push @cmd, '--disabled-password';
+	# push @cmd, '--gecos', '';
 	
 	# if creating as system group
 	if ($opts{'system'})
@@ -1167,7 +1186,7 @@ sub create {
 	push @cmd, $name;
 	
 	# create user
-	$class->run_cmd('error-creating-user', 'addgroup', @cmd) or return undef;
+	$class->run_cmd('error-creating-user', 'groupadd', @cmd) or return undef;
 	
 	# create object
 	$group = bless({}, $class);
@@ -1507,7 +1526,7 @@ Please feel free to contribute code for these purposes.
 
 =head1 VERSION
 
-Version: 0.10
+Version: 0.11
 
 =head1 HISTORY
 
@@ -1518,6 +1537,14 @@ Version: 0.10
 =item Version 0.10    December 30, 2014
 
 Initial release
+
+=over
+
+=item Version 0.11    December 31, 2014
+
+Changed addgroup to groupadd.
+
+Added tests for existence of adduser, usermod, and groupadd.
 
 =back
 
