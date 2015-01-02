@@ -14,7 +14,7 @@ use Carp 'croak';
 # use Debug::ShowStuff::ShowVar;
 
 # version
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 
 #------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ Unix::Mgt - lightweight Unix management tools
 
  # get user account
  $user = Unix::Mgt::User->get('fred');
- 
+
  # display some info
  print 'uid: ', $user->uid, "\n";
  print join(', ', $user->groups()), "\n";
@@ -59,7 +59,7 @@ Unix::Mgt - lightweight Unix management tools
 
  # get group
  $group = Unix::Mgt::Group->get('www-data');
- 
+
  # display some info
  print 'gid: ', $group->gid, "\n";
  print join(', ', $group->members()), "\n";
@@ -1530,15 +1530,11 @@ Version: 0.11
 
 =head1 HISTORY
 
-=head1 HISTORY
-
 =over
 
 =item Version 0.10    December 30, 2014
 
 Initial release
-
-=over
 
 =item Version 0.11    December 31, 2014
 
@@ -1546,9 +1542,12 @@ Changed addgroup to groupadd.
 
 Added tests for existence of adduser, usermod, and groupadd.
 
+=item Version 0.12
+
+Fixed some POD formatting issues.
+
+Revised tests to include test names.
+
 =back
-
-=cut
-
 
 =cut

@@ -11,8 +11,12 @@ use Unix::SearchPathGuess 'cmd_path_guess';
 # mgt_err
 #
 sub mgt_err {
-	my ($should) = @_;
-	return set_ok(comp($Unix::Mgt::err_id, $should));
+	my ($should, $test_name) = @_;
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
+	
+	return comp($Unix::Mgt::err_id, $should, $test_name);
 }
 #
 # mgt_err
@@ -21,6 +25,7 @@ sub mgt_err {
 
 #------------------------------------------------------------------------------
 # reset_users_groups
+# This sub is used for the development of tests, not the tests themselves.
 #
 
 # config
@@ -63,6 +68,7 @@ sub reset_users_groups {
 
 #------------------------------------------------------------------------------
 # show_err
+# This sub is used for the development of tests, not the tests themselves.
 #
 sub show_err {
 	my ($should) = @_;
@@ -87,6 +93,7 @@ sub show_err {
 
 #------------------------------------------------------------------------------
 # show_user
+# This sub is used for the development of tests, not the tests themselves.
 #
 sub showuser { return show_user(@_) }
 
@@ -110,6 +117,7 @@ sub show_user {
 
 #------------------------------------------------------------------------------
 # show_group
+# This sub is used for the development of tests, not the tests themselves.
 #
 sub showgroup { return show_group(@_) }
 

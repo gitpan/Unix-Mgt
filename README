@@ -6,7 +6,7 @@ SYNOPSIS
 
      # get user account
      $user = Unix::Mgt::User->get('fred');
-     
+    
      # display some info
      print 'uid: ', $user->uid, "\n";
      print join(', ', $user->groups()), "\n";
@@ -24,7 +24,7 @@ SYNOPSIS
     
      # get group
      $group = Unix::Mgt::Group->get('www-data');
-     
+    
      # display some info
      print 'gid: ', $group->gid, "\n";
      print join(', ', $group->members()), "\n";
@@ -316,28 +316,19 @@ VERSION
 
 HISTORY
 
-HISTORY
-
     Version 0.10 December 30, 2014
 
       Initial release
 
-      Version 0.11 December 31, 2014
+    Version 0.11 December 31, 2014
 
-	Changed addgroup to groupadd.
+      Changed addgroup to groupadd.
 
-	Added tests for existence of adduser, usermod, and groupadd.
+      Added tests for existence of adduser, usermod, and groupadd.
 
-POD ERRORS
+    Version 0.12
 
-    Hey! The above document had some coding errors, which are explained
-    below:
+      Fixed some POD formatting issues.
 
-    Around line 1535:
-
-      =over without closing =back
-
-    Around line 1554:
-
-      =cut found outside a pod block.  Skipping to next block.
+      Revised tests to include test names.
 

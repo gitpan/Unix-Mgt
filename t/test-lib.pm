@@ -1,5 +1,6 @@
 use strict;
 use FileHandle;
+use Carp 'confess';
 
 # debugging
 # use Debug::ShowStuff ':all';
@@ -7,86 +8,30 @@ use FileHandle;
 
 
 #------------------------------------------------------------------------------
-# eval_error
-#
-sub eval_error {
-	my ($expected, $code) = @_;
-	my ($object);
-	
-	# TESTING
-	# println subname(); ##i
-	
-	# run code
-	$object = &$code();
-	
-	# should not have a structure at this point
-	if (defined $object) {
-		set_ok(0, 'should not have defined structure');
-	}
-	
-	# should have error id
-	if (! $JSON::Relaxed::err_id) {
-		set_ok(0, '$JSON::Relaxed::err_id should be true but is not');
-	}
-	
-	# error should have given id
-	if ($JSON::Relaxed::err_id ne $expected) {
-		set_ok(
-			0,
-			'got error ' .
-			"\n\t$JSON::Relaxed::err_id: $JSON::Relaxed::err_msg\n" .
-			'but expected error:' .
-			"\n\t$expected"
-		);
-	}
-	
-	# all ok
-	set_ok(1);
-}
-#
-# eval_error
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# error_not_ok
-#
-sub error_from_rjson {
-	if ($JSON::Relaxed::err_id) {
-		set_ok(0, $JSON::Relaxed::err_id . ': ' . $JSON::Relaxed::err_msg);
-	}
-	else {
-		set_ok(1);
-	}
-}
-#
-# error_not_ok
-#------------------------------------------------------------------------------
-
-
-
-#------------------------------------------------------------------------------
 # comp
 #
 sub comp {
-	my ($is, $shouldbe) = @_;
+	my ($is, $shouldbe, $test_name) = @_;
 	
 	# TESTING
 	# println subname(); ##i
 	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
+	
 	if(! equndef($is, $shouldbe)) {
-		# showvar $is;
-		# showvar $shouldbe;
+		if ($ENV{'IDOCSDEV'}) {
+			print STDERR 
+				"\n",
+				"\tis:         ", (defined($is) ?       $is       : '[undef]'), "\n",
+				"\tshould be : ", (defined($shouldbe) ? $shouldbe : '[undef]'), "\n\n";
+		}
 		
-		print STDERR 
-			"\n",
-			"\tis:         ", (defined($is) ?       $is       : '[undef]'), "\n",
-			"\tshould be : ", (defined($shouldbe) ? $shouldbe : '[undef]'), "\n\n";
-		set_ok(0, 'values do not match');
+		set_ok(0, "$test_name: values do not match");
 	}
 	
 	else {
-		set_ok(1);
+		set_ok(1, "$test_name: values match");
 	}
 }
 #
@@ -112,11 +57,14 @@ sub slurp {
 # arr_comp
 #
 sub arr_comp {
-	my ($alpha_sent, $beta_sent, %opts) = @_;
+	my ($alpha_sent, $beta_sent, $test_name, %opts) = @_;
 	my (@alpha, @beta);
 	
 	# TESTING
 	# println subname(); ##i
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
 	
 	# both must be array references
 	unless (
@@ -127,7 +75,7 @@ sub arr_comp {
 	
 	# if they have different lengths, they're different
 	if (@$alpha_sent != @$beta_sent)
-		{ set_ok(0) }
+		{ set_ok(0, $test_name) }
 	
 	# get arrays to use for comparison
 	@alpha = @$alpha_sent;
@@ -152,7 +100,7 @@ sub arr_comp {
 			( (  defined $alpha[$i]) && (! defined $beta[$i]) ) ||
 			( (! defined $alpha[$i]) && (  defined $beta[$i]) )
 			) {
-			set_ok(0);
+			set_ok(0, $test_name);
 		}
 		
 		# if $alpha[$i] is undef then both must be, so they're the same
@@ -162,12 +110,12 @@ sub arr_comp {
 		# both are defined
 		else {
 			unless ($alpha[$i] eq $beta[$i])
-				{ set_ok(0) }
+				{ set_ok(0, $test_name) }
 		}
 	}
 	
 	# if we get this far, they're the same
-	set_ok(1);
+	set_ok(1, $test_name);
 }
 #
 # arr_comp
@@ -178,8 +126,12 @@ sub arr_comp {
 # check_isa
 #
 sub check_isa {
-	my ($ob, $class) = @_;
-	set_ok(UNIVERSAL::isa $ob, $class);
+	my ($ob, $class, $test_name) = @_;
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
+	
+	set_ok(UNIVERSAL::isa( $ob, $class), $test_name);
 }
 #
 # check_isa
@@ -205,43 +157,6 @@ sub equndef {
 }
 #
 # equndef
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# token_check
-#
-sub token_check {
-	my ($rjson, $should) = @_;
-	my ($parser, @chars, @tokens);
-	
-	# TESTING
-	# println subname(); ##i
-	
-	# parse
-	$parser = JSON::Relaxed::Parser->new();
-	@chars = $parser->parse_chars($rjson);
-	
-	# should not be any errors
-	error_from_rjson();
-	
-	# get tokens
-	@tokens = $parser->tokenize(\@chars);
-	
-	# should not be any errors
-	error_from_rjson();
-	
-	# should only be one token
-	set_ok(@tokens == 1);
-	
-	# should be a JSON::Relaxed::Parser::Token::String object
-	check_isa($tokens[0], 'JSON::Relaxed::Parser::Token::String');
-	
-	# value of str should be xyz
-	comp($tokens[0]->{'raw'}, $should);
-}
-#
-# token_check
 #------------------------------------------------------------------------------
 
 
@@ -274,10 +189,13 @@ sub stringify_tokens {
 # set_ok
 #
 sub set_ok {
-	my ($ok, $msg) = @_;
+	my ($ok, $test_name) = @_;
 	
 	# TESTING
 	# println subname(); ##i
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
 	
 	# development environment
 	if ($ENV{'IDOCSDEV'}) {
@@ -286,15 +204,13 @@ sub set_ok {
 		}
 		
 		else {
-			if (! defined $msg)
-				{ $msg = 'unspecific not-ok' }
-			
-			die($msg);
+			die($test_name);
 		}
 	}
 	
 	# else regular ok
-	ok($ok);
+	# ok($ok, '[1] ' . compact($test_name));
+	ok($ok, compact($test_name));
 }
 #
 # set_ok
@@ -305,21 +221,27 @@ sub set_ok {
 # key_count
 #
 sub key_count {
-	my ($hash, $count) = @_;
+	my ($hash, $count, $test_name) = @_;
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
 	
 	unless (scalar(keys %$hash) == $count) {
 		set_ok(
 			0,
+			
 			'hash should have ' .
 			$count . ' ' .
 			'element' .
 			( ($count == 1) ? '' : 's' ) . ' ' .
 			'but actually has ' .
-			scalar(keys %$hash)
+			scalar(keys %$hash),
+			
+			$test_name
 		);
 	}
 	
-	set_ok(1);
+	set_ok(1, $test_name);
 }
 #
 # key_count
@@ -330,8 +252,11 @@ sub key_count {
 # bool_check
 #
 sub bool_check {
-	my ($is_got, $should_got) = @_;
+	my ($is_got, $should_got, $test_name) = @_;
 	my ($is_norm, $should_norm);
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
 	
 	# normalize boolean values
 	$is_norm = $is_got ? 1 : 0;
@@ -342,14 +267,14 @@ sub bool_check {
 			"\n",
 			"\tis:         ", (defined($is_got)     ? $is_got     : '[undef]'), "\n",
 			"\tshould be : ", (defined($should_got) ? $should_got : '[undef]'), "\n\n";
-		set_ok(0, 'boolean values do not match');
+		set_ok(0, $test_name);
 		
 		# return false
 		return 0;
 	}
 	
 	# ok
-	set_ok(1);
+	set_ok(1, $test_name);
 	
 	# return true
 	return 1;
@@ -364,21 +289,27 @@ sub bool_check {
 # el_count
 #
 sub el_count {
-	my ($arr, $count) = @_;
+	my ($arr, $count, $test_name) = @_;
+	
+	# $test_name is required
+	$test_name or confess ('$test_name is required');
 	
 	unless (scalar(@$arr) == $count) {
 		set_ok(
 			0,
+			
 			'array should have ' .
 			$count . ' ' .
 			'element' .
 			( ($count == 1) ? '' : 's' ) . ' ' .
 			'but actually has ' .
-			scalar(@$arr)
+			scalar(@$arr),
+			
+			$test_name
 		);
 	}
 	
-	set_ok(1);
+	set_ok(1, $test_name);
 }
 #
 # el_count
@@ -386,19 +317,22 @@ sub el_count {
 
 
 #------------------------------------------------------------------------------
-# show_rjson_err
+# compact
 #
-sub show_rjson_err {
-	if ($JSON::Relaxed::err_id) {
-		print
-			$JSON::Relaxed::err_id, ': ',
-			$JSON::Relaxed::err_msg, "\n\n";
+sub compact {
+	my ($val) = @_;
+	
+	if (defined $val) {
+		$val =~ s|^\s+||s;
+		$val =~ s|\s+$||s;
+		$val =~ s|\s+| |sg;
 	}
+	
+	return $val;
 }
 #
-# show_rjson_err
+# compact
 #------------------------------------------------------------------------------
-
 
 
 # return true
