@@ -14,7 +14,7 @@ use Carp 'croak';
 # use Debug::ShowStuff::ShowVar;
 
 # version
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 
 #------------------------------------------------------------------------------
@@ -82,15 +82,48 @@ C<adduser>.
 
 In the spirit of "release early, release often", I'm releasing this version
 of Unix::Mgt before it has all the features that might be expected. This
-version does not include methods for deleting users, removing them from groups,
-or other deletion oriented objectives.
+version does not include methods for removing users from groups, renaming
+users or groups, or several other methods.
+
+=head2 Help with BSD development
+
+This version does not work well on BSDish systems. Although the methods for
+retrieving information such as C<get> and C<group> work well, this module
+currently cannot create, modify, or delete users or group. If you'd like to
+help fill in these features, here's what needs to be done.
+
+Several places in the code is the comment "BSD code needed". In those places
+what we need is to build an array consisting of an external command and the
+arguments to be sent to the command. It would look something like this:
+
+ # build command
+ @cmd = (
+    'pw', 
+    'useradd', 
+    $user->{'name'},
+    '-G', 
+    $group->{'name'},
+ );
+
+The first element of the array is the program to be run. You don't need to put
+the full path of the program, L<Unix::SearchPathGuess> should find it. (If it
+doesn't please let me know, we may need to fix Unix::SearchPathGuess.) The
+remaining elements are the params sent to the program using
+L<IPC::System::Simple>. The program is not run in a shell, but instead is
+called directly, so it isn't necessary to do any shell escaping.
+
+The following methods currently need patching. In Unix::Mgt::User we need
+create(), field_get_set(), group(), add_to_group(), and remove(). In
+Unix::Mgt::Group we need create() and remove(). We will need more as we add
+features to this module.
+
+Please email me at miko@idocs.com if you've made these mods.
 
 =cut
 
 #
 # opening POD
 #------------------------------------------------------------------------------
-
 
 
 #------------------------------------------------------------------------------
@@ -120,7 +153,7 @@ sub reset_err {
 
 sub unix_mgt_err {
 	if ($err_id)
-		{ return $err_id . ': ' . $err_msg . "\n" }
+		{ return $err_id . ': ' . define($err_msg) . "\n" }
 	else
 		{ return '' }
 }
@@ -215,6 +248,31 @@ sub run_cmd {
 #------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------
+# use_bsd
+#
+my ($use_bsd);
+
+sub use_bsd {
+	my ($ug) = @_;
+	my $use_bsd = \$Unix::Mgt::use_bsd;
+	
+	# TESTING
+	# println subname(method=>1); ##i
+	
+	# if cached, use that
+	if (defined $$use_bsd)
+		{ return $$use_bsd }
+	
+	# else get the command, cache, and return
+	$$use_bsd = cmd_path_guess('pw');
+	return $$use_bsd;
+}
+#
+# use_bsd
+#------------------------------------------------------------------------------
+
+
 #
 # Unix::Mgt
 ###############################################################################
@@ -228,6 +286,7 @@ package Unix::Mgt::UGCommon;
 use strict;
 use String::Util ':all';
 use Carp 'croak';
+use Unix::SearchPathGuess 'cmd_path_guess';
 use base 'Unix::Mgt';
 
 # debug tools
@@ -598,19 +657,35 @@ sub create {
 	# safety check
 	$class->mod_only($name);
 	
-	# build command
-	# push @cmd, '--disabled-password';
-	# push @cmd, '--gecos', '';
+	# BSD style
+	if ($class->use_bsd) {
+		# BSD code needed
+		
+		croak
+			'We have not yet implemented for BSD. ' .
+			'Please see "Help with BSD development" in the Unix::Mgt ' .
+			'documents to help with this issue.';
+	}
 	
-	# if creating as system user
-	if ($opts{'system'})
-		{ push @cmd, '--system' }
+	# else Linux style
+	else {
+		# build command
+		@cmd = (
+			'adduser',
+			'--disabled-password',
+			'--gecos', '',
+		);
+		
+		# if creating as system user
+		if ($opts{'system'})
+			{ push @cmd, '--system' }
+		
+		# add name
+		push @cmd, $name;
+	}
 	
-	# add name
-	push @cmd, $name;
-	
-	# create user
-	$class->run_cmd('error-creating-user', 'adduser', @cmd) or return undef;
+	# run command
+	$class->run_cmd('error-creating-user', @cmd) or return undef;
 	
 	# create object
 	$user = bless({}, $class);
@@ -757,15 +832,29 @@ sub field_get_set {
 		# safety check
 		$user->mod_only($user->{'name'});
 		
-		# build command
-		@cmd = (
-			"--$option",
-			$value,
-			$user->{'name'},
-		);
+		# BSD style
+		if ($user->use_bsd) {
+			# BSD code needed
+			
+			croak
+				'We have not yet implemented for BSD. ' .
+				'Please see "Help with BSD development" in the Unix::Mgt ' .
+				'documents to help with this issue.';
+		}
+		
+		# else Linux style
+		else {
+			# build command
+			@cmd = (
+				'usermod',
+				"--$option",
+				$value,
+				$user->{'name'},
+			);
+		}
 		
 		# run command
-		$user->run_cmd("usermod-error-$field", 'usermod', @cmd) or return undef;
+		$user->run_cmd("usermod-error-$field", @cmd) or return undef;
 	}
 	
 	# return field
@@ -824,16 +913,29 @@ sub group {
 		# reset error globals
 		$user->reset_err();
 		
-		# build usermod arguments
-		@args = (
-			'--gid',
-			"$new_group",
-			"$user"
-		);
+		# BSD style
+		if ($user->use_bsd) {
+			# BSD code needed
+			
+			croak
+				'We have not yet implemented for BSD. ' .
+				'Please see "Help with BSD development" in the Unix::Mgt ' .
+				'documents to help with this issue.';
+		}
 		
+		# else Linux style
+		else {
+			# build usermod arguments
+			@args = (
+				'usermod',
+				'-g',
+				"$new_group",
+				"$user"
+			);
+		}
 		
 		# change user's group
-		$success = $user->run_cmd('error-setting-user-group', 'usermod', @args);
+		$success = $user->run_cmd('error-setting-user-group', @args);
 		$success or return 0;
 	}
 	
@@ -971,18 +1073,30 @@ sub add_to_group {
 	# TESTING
 	# println subname(method=>1); ##i
 	
-	# build command arguments
-	@args = (
-		'--append',
-		'--groups',
-		"$group",
-		"$user"
-	);
+	# BSD style
+	if ($user->use_bsd) {
+		# BSD code needed
+		
+		croak
+			'We have not yet implemented for BSD. ' .
+			'Please see "Help with BSD development" in the Unix::Mgt ' .
+			'documents to help with this issue.';
+	}
+	
+	# else Linux style
+	else {
+		# build command arguments
+		@args = (
+			'usermod',
+			'--append',
+			'--groups',
+			"$group",
+			"$user"
+		);
+	}
 	
 	# run command
-	$success = $user->run_cmd(
-		'error-adding-user-to-group',
-		'usermod', @args);
+	$success = $user->run_cmd('error-adding-user-to-group', @args);
 	
 	# return success|failure
 	return $success;
@@ -990,6 +1104,55 @@ sub add_to_group {
 #
 # add_to_group
 #------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# remove
+#
+
+=head2 remove
+
+C<remove> removes the user account from the system. C<remove> does not take any
+parameters.
+
+ $user->remove();
+
+=cut
+
+sub remove {
+	my ($user) = @_;
+	
+	# TESTING
+	# println subname(method=>1); ##i
+	
+	# safety check
+	$user->mod_only($user);
+	
+	# reset error
+	$user->reset_err();
+	
+	# BSD style
+	if ($user->use_bsd) {
+		# BSD code needed
+		
+		croak
+			'We have not yet implemented for BSD. ' .
+			'Please see "Help with BSD development" in the Unix::Mgt ' .
+			'documents to help with this issue.';
+	}
+	
+	# else use userdel
+	else {
+		$user->run_cmd('error-deleting-user', 'userdel', $user->name) or return undef;
+	}
+	
+	# return
+	return 1;
+}
+#
+# remove
+#------------------------------------------------------------------------------
+
 
 
 #
@@ -1163,7 +1326,7 @@ sub create {
 	$name = $class->name_check($name, 'missing-group-name');
 	$name or return undef;
 	
-	# if user exists, throw error
+	# if group exists, throw error
 	if ($class->fields($name)) {
 		return $class->set_err(
 			'already-have-group',
@@ -1174,19 +1337,31 @@ sub create {
 	# safety check
 	$class->mod_only($name);
 	
-	# build command
-	# push @cmd, '--disabled-password';
-	# push @cmd, '--gecos', '';
+	# BSD style
+	if ($class->use_bsd) {
+		# BSD code needed
+		
+		croak
+			'We have not yet implemented for BSD. ' .
+			'Please see "Help with BSD development" in the Unix::Mgt ' .
+			'documents to help with this issue.';
+	}
 	
-	# if creating as system group
-	if ($opts{'system'})
-		{ push @cmd, '--system' }
+	# else Linux style
+	else {
+		# command
+		push @cmd, 'groupadd';
+		
+		# if creating as system group
+		if ($opts{'system'})
+			{ push @cmd, '--system' }
+		
+		# add name
+		push @cmd, $name;
+	}
 	
-	# add name
-	push @cmd, $name;
-	
-	# create user
-	$class->run_cmd('error-creating-user', 'groupadd', @cmd) or return undef;
+	# run command
+	$class->run_cmd('error-creating-group', @cmd) or return undef;
 	
 	# create object
 	$group = bless({}, $class);
@@ -1489,6 +1664,82 @@ sub add_member {
 #------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------
+# remove
+#
+
+=head2 remove
+
+C<remove> removes the group from the system. C<remove> does not take any
+parameters.
+
+ $group->remove();
+
+If any users have the group as a primary group then this method will fail.
+
+=cut
+
+sub remove {
+	my ($group) = @_;
+	
+	# TESTING
+	# println subname(method=>1); ##i
+	
+	# safety check
+	$group->mod_only($group);
+	
+	# reset error
+	$group->reset_err();
+	
+	# cannot remove if any users have this group as primary group
+	if (my @primaries = $group->primary_members) {
+		my ($id, $msg);
+		
+		# ste id
+		$id = 'cannot-remove-primary-group';
+		
+		# begin message
+		$msg =
+			'cannot remove the group "' . $group->name() .
+			'" because it is the primary group for ';
+		
+		# plural
+		if (@primaries > 1) {
+			$msg .= 'the following users: ' . join(', ', @primaries);
+		}
+		
+		# singular
+		else {
+			$msg .= 'the user "' . $primaries[0] . '"';
+		}
+		
+		# return failure
+		return $group->set_err($id, $msg);
+	}
+	
+	# if using pw command
+	if ($group->use_bsd) {
+		# BSD code needed
+		
+		croak
+			'We have not yet implemented for BSD. ' .
+			'Please see "Help with BSD development" in the Unix::Mgt ' .
+			'documents to help with this issue.';
+	}
+	
+	# else use groupdel
+	else {
+		$group->run_cmd('error-deleting-group', 'groupdel', $group->name) or return undef;
+	}
+	
+	# return
+	return 1;
+}
+#
+# remove
+#------------------------------------------------------------------------------
+
+
 #
 # Unix::Mgt::Group
 ###############################################################################
@@ -1524,29 +1775,32 @@ objectives.
 
 Please feel free to contribute code for these purposes.
 
-=head1 VERSION
-
-Version: 0.11
-
 =head1 HISTORY
 
 =over
 
-=item Version 0.10    December 30, 2014
+=item Version 0.10 December 30, 2014
 
 Initial release
 
-=item Version 0.11    December 31, 2014
+=item Version 0.11 December 31, 2014
 
 Changed addgroup to groupadd.
 
 Added tests for existence of adduser, usermod, and groupadd.
 
-=item Version 0.12
+=item Version 0.12 January 3, 2015
 
 Fixed some POD formatting issues.
 
 Revised tests to include test names.
+
+=item Version 0.13 January 4, 2015
+
+Added $user->remove() and $group->remove().
+
+Added slots where BSD-style commands will go. Currently, methods for creating,
+modifying, or deleting users or group will fail on BSD.
 
 =back
 

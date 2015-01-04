@@ -47,8 +47,42 @@ C<adduser>.
 
 In the spirit of "release early, release often", I'm releasing this version
 of Unix::Mgt before it has all the features that might be expected. This
-version does not include methods for deleting users, removing them from groups,
-or other deletion oriented objectives.
+version does not include methods for removing users from groups, renaming
+users or groups, or several other methods.
+
+=head2 Help with BSD development
+
+This version does not work well on BSDish systems. Although the methods for
+retrieving information such as C<get> and C<group> work well, this module
+currently cannot create, modify, or delete users or group. If you'd like to
+help fill in these features, here's what needs to be done.
+
+Several places in the code is the comment "BSD code needed". In those places
+what we need is to build an array consisting of an external command and the
+arguments to be sent to the command. It would look something like this:
+
+ # build command
+ @cmd = (
+    'pw', 
+    'useradd', 
+    $user->{'name'},
+    '-G', 
+    $group->{'name'},
+ );
+
+The first element of the array is the program to be run. You don't need to put
+the full path of the program, L<Unix::SearchPathGuess> should find it. (If it
+doesn't please let me know, we may need to fix Unix::SearchPathGuess.) The
+remaining elements are the params sent to the program using
+L<IPC::System::Simple>. The program is not run in a shell, but instead is
+called directly, so it isn't necessary to do any shell escaping.
+
+The following methods currently need patching. In Unix::Mgt::User we need
+create(), field_get_set(), group(), add_to_group(), and remove(). In
+Unix::Mgt::Group we need create() and remove(). We will need more as we add
+features to this module.
+
+Please email me at miko@idocs.com if you've made these mods.
 
 =head1 Unix::Mgt::User
 
@@ -188,6 +222,13 @@ secondary groups, not the primary group.
 
  $user->add_to_group('video');
 
+=head2 remove
+
+C<remove> removes the user account from the system. C<remove> does not take any
+parameters.
+
+ $user->remove();
+
 =head1 Unix::Mgt::Group
 
 A Unix::Mgt::Group object represents a group in the Unix system. The object
@@ -280,6 +321,15 @@ param can be a user name, uid, or Unix::Mgt::User object.
 If the user is already a member of the group then nothing is done and no error
 is set.
 
+=head2 remove
+
+C<remove> removes the group from the system. C<remove> does not take any
+parameters.
+
+ $group->remove();
+
+If any users have the group as a primary group then this method will fail.
+
 =head1 SEE ALSO
 
 L<Passwd::Unix|http://search.cpan.org/~strzelec/Passwd-Unix/> and
@@ -304,29 +354,32 @@ objectives.
 
 Please feel free to contribute code for these purposes.
 
-=head1 VERSION
-
-Version: 0.11
-
 =head1 HISTORY
 
 =over 4
 
-=item Version 0.10    December 30, 2014
+=item Version 0.10 December 30, 2014
 
 Initial release
 
-=item Version 0.11    December 31, 2014
+=item Version 0.11 December 31, 2014
 
 Changed addgroup to groupadd.
 
 Added tests for existence of adduser, usermod, and groupadd.
 
-=item Version 0.12
+=item Version 0.12 January 3, 2015
 
 Fixed some POD formatting issues.
 
 Revised tests to include test names.
+
+=item Version 0.13 January 4, 2015
+
+Added $user->remove() and $group->remove().
+
+Added slots where BSD-style commands will go. Currently, methods for creating,
+modifying, or deleting users or group will fail on BSD.
 
 =back
 

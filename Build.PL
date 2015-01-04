@@ -10,7 +10,7 @@ $params = {
             'requires' => {
                             'IPC::System::Simple' => '1.25',
                             'Capture::Tiny' => '0.25',
-                            'String::Util' => 0,
+                            'String::Util' => '1.24',
                             'Unix::SearchPathGuess' => '0.11'
                           },
             'dist_version_from' => 'lib/Unix/Mgt.pm',
